@@ -1,0 +1,4 @@
+# 必要なパッケージをここに追加してください
+# 例:
+# requests
+# beautifulsoup4
