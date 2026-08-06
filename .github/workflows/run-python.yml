@@ -1,14 +1,13 @@
 name: Run Python
 
 on:
-  # 定期実行 (UTC 基準)。以下は毎日 00:00 JST (= 15:00 UTC) の例
+  # 定期実行 (UTC 基準)。毎日 00:37 JST (= 15:37 UTC)。
+  # 「毎時 00 分」は世界中のジョブが集中して待ち時間が長くなるため、
+  # あえて中途半端な分 (37 分) にずらしています。
   schedule:
-    - cron: "0 15 * * *"
+    - cron: "37 15 * * *"
   # GitHub の Actions タブから手動実行できるようにする
   workflow_dispatch:
-  # main ブランチへ push したときも実行する(不要なら削除)
-  push:
-    branches: [main]
 
 # 実行結果をリポジトリにコミットするための権限
 permissions:
@@ -34,9 +33,15 @@ jobs:
           cache: pip
 
       - name: 依存パッケージをインストール
+        # 一時的なネットワークエラーに備えて 3 回まで再試行する
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          for i in 1 2 3; do
+            python -m pip install --upgrade pip && pip install -r requirements.txt && exit 0
+            echo "インストールに失敗しました。$((i * 10)) 秒後に再試行します ($i/3)"
+            sleep $((i * 10))
+          done
+          echo "3 回試しましたが依存パッケージのインストールに失敗しました"
+          exit 1
 
       - name: スクリプトを実行
         run: python main.py
